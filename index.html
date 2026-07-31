@@ -142,6 +142,57 @@
 <script>
 'use strict';
 
+/* Hand-written summaries and live links per repo. Repos not listed here fall
+   back to their GitHub description and a GitHub Pages URL. */
+const OVERRIDES = {
+  'sankey_open_studio': {
+    summary: 'Free sankey diagram builder that runs entirely in your browser. Paste flows from a spreadsheet, style every node and flow, and export crisp SVG and PNG images. No accounts, your data never leaves your computer.',
+    live: 'https://olagon.github.io/sankey_open_studio/',
+  },
+  'holua': {
+    summary: 'First person hōlua sledding game. Race a papa hōlua down a Kona mountainside at sunset and launch off a sea cliff. A single HTML file with fully procedural 3D.',
+    live: 'https://olagon.github.io/holua/',
+  },
+  'learnhawaiian': {
+    summary: 'Learn ʻōlelo Hawaiʻi by mastering the 2,000 most useful words. Short daily rounds with two way recall and spaced repetition, over 2,600 entries with correct ʻokina and kahakō.',
+    live: 'https://olelodaily.com/',
+  },
+  'ShiftyWords.com': {
+    summary: 'A word puzzle game of uncovering hidden words, level by level, all the way up to Impossible. Playable in English, Hawaiian, French, Spanish, Russian, and Ukrainian.',
+    live: 'https://shiftywords.com/',
+  },
+  'hana': {
+    summary: 'A paste-anything AI task manager. Drop in an email or meeting notes and hana pulls out the tasks, dates them, and keeps unfinished work moving forward.',
+    live: 'https://olagon.github.io/hana/',
+  },
+  'hana-local': {
+    summary: 'A fully private, on-device task manager. A small open source language model runs in your own browser and turns messy text into a clean task list. Your words never leave your device.',
+    live: 'https://olagon.github.io/hana-local/',
+  },
+  'huakai': {
+    summary: 'A geography journey through Hawaiʻi. See a photo of a real place, then find its island, moku, and ahupuaʻa on the live State GIS map. 156 photographed locations across all eight islands.',
+    live: 'https://olagon.github.io/huakai/',
+  },
+  'rootz': {
+    summary: 'A daily Hawaiian word sorting puzzle. Sort 16 words into four hidden groups of four, with daily streaks, a puzzle archive, and offline play on your phone.',
+    live: 'https://olagon.github.io/rootz/',
+  },
+  'pegasus': {
+    summary: 'Learn the Major System, the mnemonic technique that turns numbers into memorable words. Spaced repetition, drills, streaks, and a memory test, all in one file.',
+    live: 'https://olagon.github.io/pegasus/',
+  },
+};
+
+// Strip any sentence that mentions Claude from GitHub descriptions.
+function cleanDescription(text) {
+  if (!text) return '';
+  return text
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => !/claude/i.test(sentence))
+    .join(' ')
+    .trim();
+}
+
 const LANG_COLORS = {
   JavaScript: '#f1e05a', TypeScript: '#3178c6', HTML: '#e34c26', CSS: '#563d7c',
   Python: '#3572A5', Shell: '#89e051', Go: '#00ADD8', Ruby: '#701516',
@@ -168,7 +219,7 @@ async function load() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     let repos = await res.json();
     repos = repos
-      .filter((r) => !r.fork && !r.archived && r.name.toLowerCase() !== 'olagon.github.io')
+      .filter((r) => !r.fork && !r.archived && r.size > 0 && r.name.toLowerCase() !== 'olagon.github.io')
       .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
 
     if (!repos.length) {
@@ -178,31 +229,33 @@ async function load() {
     status.remove();
 
     repos.forEach((r) => {
+      const o = OVERRIDES[r.name] || {};
+      const liveUrl = o.live || r.homepage || 'https://olagon.github.io/' + r.name + '/';
+      const summary = o.summary || cleanDescription(r.description) || 'No description yet.';
+
       const card = document.createElement('a');
       card.className = 'card';
-      card.href = r.html_url;
+      card.href = liveUrl; // clicking the card opens the live app
       card.target = '_blank';
       card.rel = 'noopener';
 
       const h3 = document.createElement('h3');
-      h3.textContent = r.name.replace(/[-_]/g, ' ');
+      h3.textContent = r.name.replace(/\.com$/i, '').replace(/[-_]/g, ' ');
       card.appendChild(h3);
 
       const p = document.createElement('p');
-      p.textContent = r.description || 'No description yet.';
+      p.textContent = summary;
       card.appendChild(p);
 
-      if (r.homepage) {
-        const live = document.createElement('span');
-        live.className = 'live';
-        live.textContent = '→ Live site: ' + r.homepage.replace(/^https?:\/\//, '').replace(/\/$/, '');
-        card.appendChild(live);
-        card.href = r.homepage; // clicking the card goes to the live app
-        const repoLink = document.createElement('span');
-        repoLink.className = 'meta';
-        repoLink.textContent = 'Source on GitHub: ' + r.full_name;
-        card.appendChild(repoLink);
-      }
+      const live = document.createElement('span');
+      live.className = 'live';
+      live.textContent = '→ Play / use it: ' + liveUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      card.appendChild(live);
+
+      const repoLink = document.createElement('span');
+      repoLink.className = 'meta';
+      repoLink.textContent = 'Source: github.com/' + r.full_name;
+      card.appendChild(repoLink);
 
       const meta = document.createElement('div');
       meta.className = 'meta';
