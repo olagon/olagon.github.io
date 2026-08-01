@@ -231,7 +231,7 @@ function makeCard(p) {
 
   const live = document.createElement('span');
   live.className = 'live';
-  live.textContent = '→ Play / use it: ' + p.live.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  live.textContent = 'Access: ' + p.live.replace(/^https?:\/\//, '').replace(/\/$/, '');
   card.appendChild(live);
 
   const src = document.createElement('span');
