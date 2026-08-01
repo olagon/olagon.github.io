@@ -103,9 +103,17 @@
   }
   .card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(61, 44, 30, 0.18); }
   .card h3 { margin: 0; font-size: 16px; color: var(--accent-deep); word-break: break-word; }
+  .thumb {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top center;
+    border-radius: 10px;
+    border: 1px solid var(--hairline);
+    background: #fff;
+  }
   .card p { margin: 0; font-size: 13.5px; color: var(--ink-2); flex: 1; }
   .meta { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
   .live {
     font-size: 12px;
     font-weight: 700;
@@ -142,46 +150,38 @@
 <script>
 'use strict';
 
-/* Hand-written summaries and live links per repo. Repos not listed here fall
-   back to their GitHub description and a GitHub Pages URL. */
-const OVERRIDES = {
-  'sankey_open_studio': {
-    summary: 'Free sankey diagram builder that runs entirely in your browser. Paste flows from a spreadsheet, style every node and flow, and export crisp SVG and PNG images. No accounts, your data never leaves your computer.',
+/* The featured projects render instantly from this list with local thumbnails,
+   so the page never goes blank if GitHub's API is rate limited. The API call
+   below only adds freshness info and any repos published later. */
+const PROJECTS = [
+  { key: 'sankey_open_studio', title: 'Sankey Open Studio',
     live: 'https://olagon.github.io/sankey_open_studio/',
-  },
-  'holua': {
-    summary: 'First person hōlua sledding game. Race a papa hōlua down a Kona mountainside at sunset and launch off a sea cliff. A single HTML file with fully procedural 3D.',
+    summary: 'Free sankey diagram builder that runs entirely in your browser. Paste flows from a spreadsheet, style every node and flow, and export crisp SVG and PNG images. No accounts, your data never leaves your computer.' },
+  { key: 'holua', title: 'Hōlua',
     live: 'https://olagon.github.io/holua/',
-  },
-  'learnhawaiian': {
-    summary: 'Learn ʻōlelo Hawaiʻi by mastering the 2,000 most useful words. Short daily rounds with two way recall and spaced repetition, over 2,600 entries with correct ʻokina and kahakō.',
+    summary: 'First person hōlua sledding game. Race a papa hōlua down a Kona mountainside at sunset and launch off a sea cliff. One file, fully procedural 3D.' },
+  { key: 'learnhawaiian', title: 'ʻŌlelo Daily',
     live: 'https://olelodaily.com/',
-  },
-  'ShiftyWords.com': {
-    summary: 'A word puzzle game of uncovering hidden words, level by level, all the way up to Impossible. Playable in English, Hawaiian, French, Spanish, Russian, and Ukrainian.',
+    summary: 'Learn ʻōlelo Hawaiʻi by mastering the 2,000 most useful words. Short daily rounds with two way recall and spaced repetition, over 2,600 entries with correct ʻokina and kahakō.' },
+  { key: 'ShiftyWords.com', title: 'ShiftyWords',
     live: 'https://shiftywords.com/',
-  },
-  'hana': {
-    summary: 'A paste-anything AI task manager. Drop in an email or meeting notes and hana pulls out the tasks, dates them, and keeps unfinished work moving forward.',
-    live: 'https://olagon.github.io/hana/',
-  },
-  'hana-local': {
-    summary: 'A fully private, on-device task manager. A small open source language model runs in your own browser and turns messy text into a clean task list. Your words never leave your device.',
-    live: 'https://olagon.github.io/hana-local/',
-  },
-  'huakai': {
-    summary: 'A geography journey through Hawaiʻi. See a photo of a real place, then find its island, moku, and ahupuaʻa on the live State GIS map. 156 photographed locations across all eight islands.',
+    summary: 'A word puzzle game of uncovering hidden words, level by level, all the way up to Impossible. Playable in English, Hawaiian, French, Spanish, Russian, and Ukrainian.' },
+  { key: 'huakai', title: 'Huakaʻi',
     live: 'https://olagon.github.io/huakai/',
-  },
-  'rootz': {
-    summary: 'A daily Hawaiian word sorting puzzle. Sort 16 words into four hidden groups of four, with daily streaks, a puzzle archive, and offline play on your phone.',
+    summary: 'A geography journey through Hawaiʻi. See a photo of a real place, then find its island, moku, and ahupuaʻa on the live State GIS map. 156 photographed locations across all eight islands.' },
+  { key: 'rootz', title: 'Rootz',
     live: 'https://olagon.github.io/rootz/',
-  },
-  'pegasus': {
-    summary: 'Learn the Major System, the mnemonic technique that turns numbers into memorable words. Spaced repetition, drills, streaks, and a memory test, all in one file.',
+    summary: 'A daily Hawaiian word sorting puzzle. Sort 16 words into four hidden groups of four, with daily streaks, a puzzle archive, and offline play on your phone.' },
+  { key: 'hana', title: 'hana',
+    live: 'https://olagon.github.io/hana/',
+    summary: 'A paste-anything AI task manager. Drop in an email or meeting notes and hana pulls out the tasks, dates them, and keeps unfinished work moving forward.' },
+  { key: 'hana-local', title: 'hana local',
+    live: 'https://olagon.github.io/hana-local/',
+    summary: 'A fully private, on-device task manager. A small open source language model runs in your own browser and turns messy text into a clean task list. Your words never leave your device.' },
+  { key: 'pegasus', title: 'Pegasus',
     live: 'https://olagon.github.io/pegasus/',
-  },
-};
+    summary: 'Learn the Major System, the mnemonic technique that turns numbers into memorable words. Spaced repetition, drills, streaks, and a memory test, all in one file.' },
+];
 
 // Strip any sentence that mentions Claude from GitHub descriptions.
 function cleanDescription(text) {
@@ -193,14 +193,6 @@ function cleanDescription(text) {
     .trim();
 }
 
-const LANG_COLORS = {
-  JavaScript: '#f1e05a', TypeScript: '#3178c6', HTML: '#e34c26', CSS: '#563d7c',
-  Python: '#3572A5', Shell: '#89e051', Go: '#00ADD8', Ruby: '#701516',
-  Java: '#b07219', PHP: '#4F5D95', C: '#555555', 'C++': '#f34b7d', 'C#': '#178600',
-  Swift: '#F05138', Kotlin: '#A97BFF', Rust: '#dea584', 'Jupyter Notebook': '#DA5B0B',
-  Vue: '#41b883', Dart: '#00B4AB', R: '#198CE7',
-};
-
 function timeAgo(iso) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   if (days < 1) return 'today';
@@ -211,81 +203,86 @@ function timeAgo(iso) {
   return years + (years === 1 ? ' year ago' : ' years ago');
 }
 
-async function load() {
-  const status = document.getElementById('status');
-  const grid = document.getElementById('grid');
-  try {
-    const res = await fetch('https://api.github.com/users/olagon/repos?per_page=100&sort=pushed');
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    let repos = await res.json();
-    repos = repos
-      .filter((r) => !r.fork && !r.archived && r.size > 0 && r.name.toLowerCase() !== 'olagon.github.io')
-      .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+const grid = document.getElementById('grid');
 
-    if (!repos.length) {
-      status.innerHTML = 'No public projects yet — check back soon, or visit <a href="https://github.com/olagon">github.com/olagon</a>.';
-      return;
-    }
-    status.remove();
+function makeCard(p) {
+  const card = document.createElement('a');
+  card.className = 'card';
+  card.dataset.key = p.key;
+  card.href = p.live;
+  card.target = '_blank';
+  card.rel = 'noopener';
 
-    repos.forEach((r) => {
-      const o = OVERRIDES[r.name] || {};
-      const liveUrl = o.live || r.homepage || 'https://olagon.github.io/' + r.name + '/';
-      const summary = o.summary || cleanDescription(r.description) || 'No description yet.';
+  const img = document.createElement('img');
+  img.className = 'thumb';
+  img.loading = 'lazy';
+  img.alt = p.title + ' screenshot';
+  img.src = 'thumbs/' + encodeURIComponent(p.key) + '.jpg';
+  img.addEventListener('error', () => img.remove());
+  card.appendChild(img);
 
-      const card = document.createElement('a');
-      card.className = 'card';
-      card.href = liveUrl; // clicking the card opens the live app
-      card.target = '_blank';
-      card.rel = 'noopener';
+  const h3 = document.createElement('h3');
+  h3.textContent = p.title;
+  card.appendChild(h3);
 
-      const h3 = document.createElement('h3');
-      h3.textContent = r.name.replace(/\.com$/i, '').replace(/[-_]/g, ' ');
-      card.appendChild(h3);
+  const desc = document.createElement('p');
+  desc.textContent = p.summary;
+  card.appendChild(desc);
 
-      const p = document.createElement('p');
-      p.textContent = summary;
-      card.appendChild(p);
+  const live = document.createElement('span');
+  live.className = 'live';
+  live.textContent = '→ Play / use it: ' + p.live.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  card.appendChild(live);
 
-      const live = document.createElement('span');
-      live.className = 'live';
-      live.textContent = '→ Play / use it: ' + liveUrl.replace(/^https?:\/\//, '').replace(/\/$/, '');
-      card.appendChild(live);
+  const src = document.createElement('span');
+  src.className = 'meta';
+  src.textContent = 'Source: github.com/olagon/' + p.key;
+  card.appendChild(src);
 
-      const repoLink = document.createElement('span');
-      repoLink.className = 'meta';
-      repoLink.textContent = 'Source: github.com/' + r.full_name;
-      card.appendChild(repoLink);
-
-      const meta = document.createElement('div');
-      meta.className = 'meta';
-      if (r.language) {
-        const lang = document.createElement('span');
-        const dot = document.createElement('span');
-        dot.className = 'dot';
-        dot.style.background = LANG_COLORS[r.language] || '#0e7490';
-        lang.appendChild(dot);
-        lang.appendChild(document.createTextNode(r.language));
-        meta.appendChild(lang);
-      }
-      if (r.stargazers_count > 0) {
-        const stars = document.createElement('span');
-        stars.textContent = '★ ' + r.stargazers_count;
-        meta.appendChild(stars);
-      }
-      const upd = document.createElement('span');
-      upd.textContent = 'Updated ' + timeAgo(r.pushed_at);
-      meta.appendChild(upd);
-      card.appendChild(meta);
-
-      grid.appendChild(card);
-    });
-  } catch (e) {
-    status.innerHTML = 'Could not load the project list right now. See everything at <a href="https://github.com/olagon" rel="noopener">github.com/olagon</a>.';
-  }
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.dataset.metaFor = p.key;
+  card.appendChild(meta);
+  return card;
 }
 
-load();
+// 1. Instant render of the featured projects. No network needed.
+document.getElementById('status').remove();
+PROJECTS.forEach((p) => grid.appendChild(makeCard(p)));
+
+// 2. Best-effort enrichment from GitHub: stars, last-updated, and any new repos.
+async function enrich() {
+  try {
+    const res = await fetch('https://api.github.com/users/olagon/repos?per_page=100&sort=pushed');
+    if (!res.ok) return;
+    const repos = await res.json();
+    const known = new Set(PROJECTS.map((p) => p.key));
+
+    repos.forEach((r) => {
+      if (known.has(r.name)) {
+        const meta = grid.querySelector('[data-meta-for="' + CSS.escape(r.name) + '"]');
+        if (!meta) return;
+        if (r.stargazers_count > 0) {
+          const stars = document.createElement('span');
+          stars.textContent = '★ ' + r.stargazers_count;
+          meta.appendChild(stars);
+        }
+        const upd = document.createElement('span');
+        upd.textContent = 'Updated ' + timeAgo(r.pushed_at);
+        meta.appendChild(upd);
+      } else if (!r.fork && !r.archived && r.size > 0 && r.name.toLowerCase() !== 'olagon.github.io') {
+        grid.appendChild(makeCard({
+          key: r.name,
+          title: r.name.replace(/\.com$/i, '').replace(/[-_]/g, ' '),
+          live: r.homepage || 'https://olagon.github.io/' + r.name + '/',
+          summary: cleanDescription(r.description) || 'A new project. Description coming soon.',
+        }));
+      }
+    });
+  } catch (e) { /* the grid is already rendered; nothing to do */ }
+}
+
+enrich();
 </script>
 </body>
 </html>
